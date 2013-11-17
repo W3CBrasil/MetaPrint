@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import posixpath
@@ -8,8 +9,38 @@ import shutil
 import mimetypes
 from StringIO import StringIO
 import subprocess
+
+slicer_executable = "Slic3r_gnulinux/bin/slic3r"
+printer_path = "profiles/printer"
+print_path = "profiles/print"
+filament_path = "profiles/filament"
+
+support_material = False #TODO: let the user decide
+fill_density = 0.2 #TODO: let the user decide
+printer_profile = "Metamaquina2" #TODO: let the user decide
+print_profile = "Padrao" #TODO: let the user decide
+filament_profile = "ABS" #TODO: let the user decide
+
+#TODO: update these values based on messages received from the firmware of the 3d printer
+bed_temperature = 0
+extruder_temperature = 0
+
+recvcb = None
+def received_msg_from_fw(msg):
+  global extruder_temperature, bed_temperature
+
+# example of a typical temperature message:
+# "T:239.49 B:89.65 @:94"
+  try:
+    extruder_temperature = msg.split("T:")[1].split(" ")[0]
+    bed_temperature = msg.split("B:")[1].split(" ")[0]
+  except:
+    pass
+
+  if recvcb:
+    recvcb(msg)
+
 def executa_fatiamento(slicecommand):
-#  try:
   import shlex
   param = slicecommand
   print "Fatiando: ", param
@@ -21,15 +52,6 @@ def executa_fatiamento(slicecommand):
     if o == '' and processo_de_fatiamento.poll() != None: break
     sys.stdout.write(o)
   processo_de_fatiamento.wait()
-#  except:
-#    print "Failed to execute slicing software"
-
-slicer_executable = "Slic3r_gnulinux/bin/slic3r"
-printer_path = "profiles/printer"
-print_path = "profiles/print"
-filament_path = "profiles/filament"
-support_material = False
-fill_density = 0.2
 
 if support_material:
   support_material_param = "--support_material"
@@ -40,15 +62,11 @@ def invoke_3d_print_job(path):
   print "We will print this file:", path
   input_file = os.getcwd() + path
   output_file = os.getcwd() + "/output.gcode" #TODO: generate it based on input filename
-  printer_profile = "Metamaquina2" #TODO: let the user decide
-  print_profile = "Padrao" #TODO: let the user decide
-  filament_profile = "PLA" #TODO: let the user decide
 
   slicecommand = "%s --load %s/%s.ini --load %s/%s.ini --load %s/%s.ini --fill-density %s %s %s --output %s" % (slicer_executable, printer_path, printer_profile, print_path, print_profile, filament_path, filament_profile, str(fill_density), support_material_param, input_file, output_file)
   print "We'll slice it with the following command: ", slicecommand
   executa_fatiamento(slicecommand)
 
-  core.loud = True
   gcode = [i.replace("\n", "") for i in open(output_file)]
   core.startprint(gcode)
 
@@ -80,6 +98,14 @@ class TreeDeePrinterRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         if self.path.startswith("/print"):
           if counter%2:
             invoke_3d_print_job(self.path.split("/print")[1])
+        elif self.path.startswith("/status.json"):
+          status = {"bed": bed_temperature,\
+                    "extruder": extruder_temperature}
+
+          self.send_response(200)
+          self.send_header("Content-type", "application/json")
+          self.end_headers()
+          self.wfile.write(json.dumps(status))
         else:
           f = self.send_head()
           if f:
@@ -238,6 +264,10 @@ baud_rate = 115200
 
 from printcore import printcore
 core = printcore(serial_port, baud_rate)
+core.loud = True
+
+recvcb = core.recvcb
+core.recvcb = received_msg_from_fw
 
 PORT = 8000
 import SocketServer

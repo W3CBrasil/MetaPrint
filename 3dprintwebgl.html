@@ -17,6 +17,20 @@
   background-color: #FBB;
 }
 
+#panel {
+  width:800px;
+}
+
+.temperature {
+  float:right;
+  color:darkred;
+  border-radius: 8px;
+  background-color: #DDD;
+  border: 1px solid grey;
+  margin: 3px;
+  padding: 5px;
+}
+
 #viewer {
   width:800px;
   height:800px;
@@ -54,13 +68,39 @@
           thingiview.displayAlert("done");
         })
       }
+
+      function check_temperature(){
+        $.ajax({
+            dataType: "json",
+            url: "/status.json",
+            mimeType: "application/json",
+            complete: function(data){
+              var json_data = $.parseJSON(data.responseText);
+              document.getElementById('extr_temp').innerHTML = json_data.extruder + ' &deg;C';
+              document.getElementById('bed_temp').innerHTML = json_data.bed + ' &deg;C';
+            }
+        });
+      }
     </script>
 
     <div id="viewer"></div>
 
-    <div class="buttonscontainer">
-      <div class="button" onclick="toggleRotation();">Toggle rotation</div>
-      <div class="button" onclick="printThis();">Print this!</div>
+    <div id="panel">
+      <div class="buttonscontainer">
+        <div class="button" onclick="toggleRotation();">Toggle rotation</div>
+        <div class="button" onclick="check_temperature();">Check temperature</div>
+        <div class="button" onclick="printThis();">Print this!</div>
+      </div>
+
+      <div class="temperaturescontainer">
+        <div class="temperature">
+          Extruder: <span id="extr_temp">---</span>
+        </div>
+
+        <div class="temperature">
+          Bed: <span id="bed_temp">---</span>
+        </div>
+      </div>
     </div>
 
   </body>
