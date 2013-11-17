@@ -48,6 +48,10 @@ def invoke_3d_print_job(path):
   print "We'll slice it with the following command: ", slicecommand
   executa_fatiamento(slicecommand)
 
+  core.loud = True
+  gcode = [i.replace("\n", "") for i in open(output_file)]
+  core.startprint(gcode)
+
 __version__ = "0.6"
 
 class TreeDeePrinterRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -223,6 +227,12 @@ class TreeDeePrinterRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         '.h': 'text/plain',
         })
 
+
+serial_port = '/dev/ttyACM0'
+baud_rate = 115200
+
+from printcore import printcore
+core = printcore(serial_port, baud_rate)
 
 PORT = 8000
 import SocketServer
