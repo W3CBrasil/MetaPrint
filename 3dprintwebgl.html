@@ -1,0 +1,67 @@
+<html>
+  <body>
+    <style>
+.button {
+  float: left;
+  text-align: center;
+  cursor: pointer;
+  max-width: 200px;
+  padding: 5px;
+  margin: 3px;
+  border-radius: 8px;
+  background-color: #DDD;
+  border: 1px solid grey;
+}
+
+.button:hover {
+  background-color: #FBB;
+}
+
+#viewer {
+  width:800px;
+  height:800px;
+}
+
+    </style>
+
+    <script src="js/jquery.js"></script>
+    <script src="js/Three.js"></script>
+    <script src="js/plane.js"></script>
+    <script src="js/thingiview.js"></script>
+
+    <script>
+      var thingiview;
+      var rotation = true;
+
+      window.onload = function() {
+        thingiurlbase = "/js";
+        thingiview = new Thingiview("viewer");
+        thingiview.setBackgroundColor('#DDDDDD');
+        thingiview.setObjectColor('#FF0000');
+        thingiview.initScene();
+        thingiview.loadSTL("/objects/chaveiro-w3c.stl");
+      }
+
+      function toggleRotation(){
+        rotation = !rotation;
+        thingiview.setRotation(rotation);
+      }
+
+      function printThis(){
+        $.ajax({
+          url: "print/objects/chaveiro-w3c.stl",
+        }).done(function() {
+          thingiview.displayAlert("done");
+        })
+      }
+    </script>
+
+    <div id="viewer"></div>
+
+    <div class="buttonscontainer">
+      <div class="button" onclick="toggleRotation();">Toggle rotation</div>
+      <div class="button" onclick="printThis();">Print this!</div>
+    </div>
+
+  </body>
+</html>

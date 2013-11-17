@@ -1,0 +1,4 @@
+impressora 3d <= printcore <= slic3r <= servidor web <=> browser => thingiview (webgl)
+
+http://n0r.org/thingiview.js/examples/index.html
+
