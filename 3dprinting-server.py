@@ -54,6 +54,8 @@ def invoke_3d_print_job(path):
 
 __version__ = "0.6"
 
+counter = 0
+
 class TreeDeePrinterRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     """Simple HTTP request handler with GET and HEAD commands.
@@ -72,9 +74,12 @@ class TreeDeePrinterRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def do_GET(self):
         """Serve a GET request."""
+        global counter
+        counter+=1
 
         if self.path.startswith("/print"):
-          invoke_3d_print_job(self.path.split("/print")[1])
+          if counter%2:
+            invoke_3d_print_job(self.path.split("/print")[1])
         else:
           f = self.send_head()
           if f:
