@@ -1,4 +1,30 @@
-slicer_executable = "slic3r_gnulinux/bin/slic3r"
+import os
+import sys
+import posixpath
+import BaseHTTPServer
+import urllib
+import cgi
+import shutil
+import mimetypes
+from StringIO import StringIO
+import subprocess
+def executa_fatiamento(slicecommand):
+#  try:
+  import shlex
+  param = slicecommand
+  print "Fatiando: ", param
+  pararray = [i for i in shlex.split(param)]
+  print pararray
+  processo_de_fatiamento = subprocess.Popen(pararray, stdin = subprocess.PIPE, stderr = subprocess.STDOUT, stdout = subprocess.PIPE)
+  while True:
+    o = processo_de_fatiamento.stdout.read(1)
+    if o == '' and processo_de_fatiamento.poll() != None: break
+    sys.stdout.write(o)
+  processo_de_fatiamento.wait()
+#  except:
+#    print "Failed to execute slicing software"
+
+slicer_executable = "Slic3r_gnulinux/bin/slic3r"
 printer_path = "profiles/printer"
 print_path = "profiles/print"
 filament_path = "profiles/filament"
@@ -20,15 +46,7 @@ def invoke_3d_print_job(path):
 
   slicecommand = "%s --load %s/%s.ini --load %s/%s.ini --load %s/%s.ini --fill-density %s %s %s --output %s" % (slicer_executable, printer_path, printer_profile, print_path, print_profile, filament_path, filament_profile, str(fill_density), support_material_param, input_file, output_file)
   print "We'll slice it with the following command: ", slicecommand
-
-import os
-import posixpath
-import BaseHTTPServer
-import urllib
-import cgi
-import shutil
-import mimetypes
-from StringIO import StringIO
+  executa_fatiamento(slicecommand)
 
 __version__ = "0.6"
 
@@ -50,10 +68,14 @@ class TreeDeePrinterRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def do_GET(self):
         """Serve a GET request."""
-        f = self.send_head()
-        if f:
-            self.copyfile(f, self.wfile)
-            f.close()
+
+        if self.path.startswith("/print"):
+          invoke_3d_print_job(self.path.split("/print")[1])
+        else:
+          f = self.send_head()
+          if f:
+              self.copyfile(f, self.wfile)
+              f.close()
 
     def do_HEAD(self):
         """Serve a HEAD request."""
@@ -73,9 +95,6 @@ class TreeDeePrinterRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
         """
         path = self.translate_path(self.path)
-        if self.path.startswith("/print"):
-          invoke_3d_print_job(self.path.split("/print")[1])
-          return None
 
         f = None
         if os.path.isdir(path):
