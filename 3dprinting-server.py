@@ -1,5 +1,25 @@
+slicer_executable = "slic3r_gnulinux/bin/slic3r"
+printer_path = "profiles/printer"
+print_path = "profiles/print"
+filament_path = "profiles/filament"
+support_material = False
+fill_density = 0.2
+
+if support_material:
+  support_material_param = "--support_material"
+else:
+  support_material_param = ""
+
 def invoke_3d_print_job(path):
-  print "We will print this:", path
+  print "We will print this file:", path
+  input_file = os.getcwd() + path
+  output_file = os.getcwd() + "/output.gcode" #TODO: generate it based on input filename
+  printer_profile = "Metamaquina2" #TODO: let the user decide
+  print_profile = "Padrao" #TODO: let the user decide
+  filament_profile = "PLA" #TODO: let the user decide
+
+  slicecommand = "%s --load %s/%s.ini --load %s/%s.ini --load %s/%s.ini --fill-density %s %s %s --output %s" % (slicer_executable, printer_path, printer_profile, print_path, print_profile, filament_path, filament_profile, str(fill_density), support_material_param, input_file, output_file)
+  print "We'll slice it with the following command: ", slicecommand
 
 import os
 import posixpath
