@@ -61,12 +61,33 @@
         thingiview.setRotation(rotation);
       }
 
-      function printThis(){
+      function printThis_remote_file(){
         $.ajax({
-          url: "print/objects/chaveiro-w3c.stl",
-        }).done(function() {
-          thingiview.displayAlert("done");
+          url: "oldprint/objects/chaveiro-w3c.stl",
         })
+      }
+
+      function load_binary_resource(url) {
+      	var req = new XMLHttpRequest();
+      	req.open('GET', url, false);
+      	// The following line says we want to receive data as Binary and not as Unicode
+      	req.overrideMimeType('text/plain; charset=x-user-defined');
+      	req.send(null);
+      	if (req.status != 200) return '';
+
+      	return req.responseText;
+      }
+
+      function printThis(){
+        var form = new FormData();
+
+        var bin = load_binary_resource("objects/chaveiro-w3c.stl");
+        var blob = new Blob([bin], { type: "text/plain"});
+        form.append("file", blob);
+
+        var req = new XMLHttpRequest();
+        req.open("POST", "print");
+        req.send(form);
       }
 
       function check_temperature(){

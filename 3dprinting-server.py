@@ -1,3 +1,4 @@
+from tempfile import NamedTemporaryFile
 import json
 import os
 import sys
@@ -60,8 +61,8 @@ else:
 
 def invoke_3d_print_job(path):
   print "We will print this file:", path
-  input_file = os.getcwd() + path
-  output_file = os.getcwd() + "/output.gcode" #TODO: generate it based on input filename
+  input_file = path
+  output_file = path + ".gcode" #TODO: generate it based on input filename
 
   slicecommand = "%s --load %s/%s.ini --load %s/%s.ini --load %s/%s.ini --fill-density %s %s %s --output %s" % (slicer_executable, printer_path, printer_profile, print_path, print_profile, filament_path, filament_profile, str(fill_density), support_material_param, input_file, output_file)
   print "We'll slice it with the following command: ", slicecommand
@@ -72,7 +73,9 @@ def invoke_3d_print_job(path):
 
 __version__ = "0.6"
 
-counter = 0
+#these are ugly hacks. Please investigate.
+get_counter = 0
+post_counter = 0
 
 class TreeDeePrinterRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
@@ -90,14 +93,30 @@ class TreeDeePrinterRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     server_version = "SimpleHTTP/" + __version__
 
+    def do_POST(self):
+        global post_counter
+        post_counter+=1
+        if post_counter%2:
+          form = cgi.FieldStorage(
+              fp=self.rfile,
+              headers=self.headers,
+              environ={'REQUEST_METHOD':'POST',
+                       'CONTENT_TYPE':self.headers['Content-Type'],
+                       })
+
+          tempfile = NamedTemporaryFile( suffix=".stl", prefix="tmp_", delete=False )
+          tempfile.write(form['file'].value)
+          tempfile.close()
+          invoke_3d_print_job(tempfile.name)
+
     def do_GET(self):
         """Serve a GET request."""
-        global counter
-        counter+=1
+        global get_counter
+        get_counter+=1
 
-        if self.path.startswith("/print"):
-          if counter%2:
-            invoke_3d_print_job(self.path.split("/print")[1])
+        if self.path.startswith("/oldprint"):
+          if get_counter%2:
+            invoke_3d_print_job(self.path.split("/oldprint")[1])
         elif self.path.startswith("/status.json"):
           status = {"bed": bed_temperature,\
                     "extruder": extruder_temperature}
