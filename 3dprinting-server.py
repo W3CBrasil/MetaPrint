@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from tempfile import NamedTemporaryFile
 import json
 import os
@@ -281,12 +283,17 @@ class TreeDeePrinterRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 serial_port = '/dev/ttyACM0'
 baud_rate = 115200
 
-from printcore import printcore
-core = printcore(serial_port, baud_rate)
-core.loud = True
+dummy = False
+if len(sys.argv) == 2 and sys.argv[1]=="dummy":
+	dummy = True
 
-recvcb = core.recvcb
-core.recvcb = received_msg_from_fw
+if (not dummy):
+	from printcore import printcore
+	core = printcore(serial_port, baud_rate)
+	core.loud = True
+
+	recvcb = core.recvcb
+	core.recvcb = received_msg_from_fw
 
 PORT = 8000
 import SocketServer
@@ -294,5 +301,5 @@ import SocketServer
 httpd = SocketServer.TCPServer(("", PORT), TreeDeePrinterRequestHandler)
 httpd.allow_reuse_address=True
 
-print "serving at port", PORT
+print "serving at http://127.0.0.1:%d/3dprintwebgl.html" % (PORT)
 httpd.serve_forever()
